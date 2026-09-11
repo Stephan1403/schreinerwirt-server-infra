@@ -1,0 +1,87 @@
+services:
+  postgres-development:
+    image: postgres:17-alpine
+    restart: unless-stopped
+
+    ports:
+      - "127.0.0.1:5432:5432"
+
+    environment:
+      POSTGRES_DB: website
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    volumes:
+      - postgres_development_data:/var/lib/postgresql/data
+
+    networks:
+      - backend
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d website"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+
+  migrate:
+    image: ghcr.io/stephan1403/schreinerwirt-backend-image:development
+
+    profiles:
+      - tools
+
+    depends_on:
+      postgres-development:
+        condition: service_healthy
+
+    entrypoint:
+      - goose
+
+    environment:
+      GOOSE_DRIVER: postgres
+      GOOSE_DBSTRING: "host=postgres-development port=5432 user=root password=${POSTGRES_PASSWORD} dbname=website sslmode=disable"
+      GOOSE_MIGRATION_DIR: /app/db/migrations
+
+    networks:
+      - backend
+
+
+  backend-development:
+    image: ghcr.io/stephan1403/schreinerwirt-backend-image:development
+    restart: unless-stopped
+
+    depends_on:
+      postgres-development:
+        condition: service_healthy
+
+    environment:
+      APP_ENV: staging
+      JWT_SECRET: ${JWT_SECRET}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      GIN_MODE: debug
+
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik_proxy
+
+      - traefik.http.routers.schreinerwirt-development.entrypoints=websecure
+      - traefik.http.routers.schreinerwirt-development.rule=Host(`api-dev.schreinerwirt-schwangau.de`)
+      - traefik.http.routers.schreinerwirt-development.tls=true
+      - traefik.http.routers.schreinerwirt-development.tls.certresolver=letsencrypt
+
+      - traefik.http.services.schreinerwirt-development.loadbalancer.server.port=8080
+
+    networks:
+      - backend
+      - traefik_proxy
+
+
+volumes:
+  postgres_development_data:
+
+
+networks:
+  backend:
+
+  traefik_proxy:
+    external: true

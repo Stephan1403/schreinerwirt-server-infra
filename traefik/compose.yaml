@@ -1,0 +1,40 @@
+services:
+  traefik:
+    image: traefik:v3.4
+    container_name: traefik
+    restart: unless-stopped
+    command:
+      - --log.level=DEBUG
+      - --api.insecure=true
+      - --providers.docker=true
+      - --providers.docker.exposedByDefault=false
+      - --providers.docker.network=proxy
+      - --entryPoints.web.address=:80
+      - --entryPoints.websecure.address=:443
+      - --certificatesResolvers.letsencrypt.acme.email=stephanf2003@gmail.com
+      - --certificatesResolvers.letsencrypt.acme.storage=/certs/acme.json
+      - --certificatesResolvers.letsencrypt.acme.caServer=https://acme-v02.api.letsencrypt.org/directory #prod
+      # - --certificatesresolvers.letsencrypt.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory #staging
+      - --certificatesResolvers.letsencrypt.acme.dnsChallenge.provider=cloudflare
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.traefik.rule=Host(`traefik.schreinerwirt-schwangau.de`)
+      - traefik.http.routers.traefik.tls=true
+      - traefik.http.routers.traefik.entrypoints=websecure
+      - traefik.http.routers.traefik.tls.certresolver=letsencrypt
+      - traefik.http.services.traefik.loadbalancer.server.port=8080
+    environment:
+      - CLOUDFLARE_DNS_API_TOKEN=${CF_API_KEY}
+#      - CF_API_EMAIL=${CF_API_EMAIL}
+    ports:
+      - 80:80
+      - 443:443
+      - 8080:8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./data/certs:/certs
+    networks:
+      - proxy
+networks:
+  proxy: null

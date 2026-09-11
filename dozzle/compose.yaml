@@ -1,0 +1,24 @@
+services:
+  dozzle:
+    container_name: dozzle
+    image: amir20/dozzle:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.http.routers.dozzle.entrypoints=websecure"
+      - "traefik.http.routers.dozzle.tls=true"
+      - "traefik.http.routers.dozzle.rule=Host(`dozzle.schreinerwirt-schwangau.de`)"
+      - "traefik.http.routers.dozzle.tls.certresolver=letsencrypt"
+      - "traefik.http.services.dozzle.loadbalancer.server.port=8080"
+      
+      # Authentication
+      - "traefik.http.middlewares.dozzle-auth.basicauth.users=${DOZZLE_BASIC_AUTH}
+      - "traefik.http.routers.dozzle.middlewares=dozzle-auth"
+    restart: always
+networks:
+  traefik_proxy:
+    external: true

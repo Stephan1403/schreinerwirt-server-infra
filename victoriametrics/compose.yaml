@@ -1,0 +1,26 @@
+services:
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:v1.151.0
+    container_name: victoriametrics
+    restart: unless-stopped
+    command:
+      - --storageDataPath=/victoria-metrics-data
+      - --retentionPeriod=90d
+      - --selfScrapeInterval=30s
+    volumes:
+      - ./victoria-metrics-data:/victoria-metrics-data
+    networks:
+      - traefik_proxy
+    ports:
+      - 127.0.0.1:8428:8428
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik_proxy
+      - traefik.http.routers.victoriametrics.rule=Host(`metrics.schreinerwirt-schwangau.de`)
+      - traefik.http.routers.victoriametrics.entrypoints=websecure
+      - traefik.http.routers.victoriametrics.tls=true
+      - traefik.http.routers.victoriametrics.tls.certresolver=letsencrypt
+      - traefik.http.services.victoriametrics.loadbalancer.server.port=8428
+networks:
+  traefik_proxy:
+    external: true

@@ -1,0 +1,23 @@
+services:
+  jaeger:
+    image: cr.jaegertracing.io/jaegertracing/jaeger:2.20.0
+    container_name: jaeger
+    restart: unless-stopped
+    networks:
+      - traefik_proxy
+    ports:
+      - 127.0.0.1:4318:4318
+    expose:
+      - "16686"
+      - "4318"
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik_proxy
+      - traefik.http.routers.jaeger.rule=Host(`jaeger.schreinerwirt-schwangau.de`)
+      - traefik.http.routers.jaeger.entrypoints=websecure
+      - traefik.http.routers.jaeger.tls=true
+      - traefik.http.routers.jaeger.tls.certresolver=letsencrypt
+      - traefik.http.services.jaeger.loadbalancer.server.port=16686
+networks:
+  traefik_proxy:
+    external: true

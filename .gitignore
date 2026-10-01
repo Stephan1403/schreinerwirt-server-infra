@@ -1,1 +1,17 @@
+# Local environment and secrets
 .env
+.env.*
+!.env.example
+
+# Persistent application data and runtime sockets
+**/data/
+**/*_data/
+**/*-data/
+**/*_socket/
+
+# Generated files
+*.log
+*.db
+*.db-shm
+*.db-wal
+*.sock
